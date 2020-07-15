@@ -1,0 +1,11 @@
+---
+
+- name: Install postgres database
+  hosts: sql
+  any_errors_fatal: true
+  become: yes
+  roles:
+    - { role: postgres, install_postgres: true }
+  tags: 
+    - install_postgres ##################  
+    

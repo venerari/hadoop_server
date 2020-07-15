@@ -1,0 +1,9 @@
+---
+
+# folder of tower user
+- name: Deleted logs on {{sa_folder}}
+  shell: |
+         rm -f  {{sa_folder}}/{{tmp_prefix}}* 
+         rm -fr {{tmp_folder}}
+  become: true
+  ignore_errors: true

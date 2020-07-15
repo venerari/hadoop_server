@@ -1,0 +1,9 @@
+sshpass -p Clark@12345! ssh-copy-id -o StrictHostKeyChecking=no dbsit.test015.org
+sshpass -p Clark@12345! ssh-copy-id -o StrictHostKeyChecking=no hdmas1sit.test015.org
+sshpass -p Clark@12345! ssh-copy-id -o StrictHostKeyChecking=no hdmas2sit.test015.org
+sshpass -p Clark@12345! ssh-copy-id -o StrictHostKeyChecking=no hdkfk1sit.test015.org
+sshpass -p Clark@12345! ssh-copy-id -o StrictHostKeyChecking=no hdkfk2sit.test015.org
+sshpass -p Clark@12345! ssh-copy-id -o StrictHostKeyChecking=no hdkfk3sit.test015.org
+sshpass -p Clark@12345! ssh-copy-id -o StrictHostKeyChecking=no hdspk1sit.test015.org
+sshpass -p Clark@12345! ssh-copy-id -o StrictHostKeyChecking=no hdspk2sit.test015.org
+sshpass -p Clark@12345! ssh-copy-id -o StrictHostKeyChecking=no hdspk3sit.test015.org

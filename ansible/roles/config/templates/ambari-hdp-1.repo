@@ -1,0 +1,15 @@
+[HDP-UTILS-1.1.0.22-repo-1]
+name=HDP-UTILS-1.1.0.22-repo-1
+baseurl=http://{{hostrepo}}/repo/HDP-UTILS
+path=/
+enabled=1
+gpgcheck=0
+priority=1
+
+[HDP-3.1-repo-1]
+name=HDP-3.1-repo-1
+baseurl=http://{{hostrepo}}/repo/HDP
+path=/
+enabled=1
+gpgcheck=0  
+priority=1

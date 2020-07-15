@@ -1,0 +1,6 @@
+[ambari-2.7.4.0]
+name=ambari Version - ambari-2.7.4.0
+baseurl=http://{{hostrepo}}/repo/ambari
+gpgcheck=0
+enabled=1
+priority=1

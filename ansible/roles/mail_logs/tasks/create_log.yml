@@ -1,0 +1,35 @@
+---
+
+- name: Init {{filename1}}.{{ext}}
+  shell: rm -f ./{{filename1}}.{{ext}};rm -f ./{{filename1}}2.{{ext}};
+  delegate_to: localhost # ansible
+  run_once: true
+  
+- name: Delete {{tmp_folder}}
+  shell: rm -fr {{tmp_folder}}
+  become: true
+  ignore_errors: true  
+
+- set_fact: log_file="log_{{inventory_hostname}}_{{lookup('pipe','date +%Y%m%d-%H%M')}}.{{ext}}"
+- set_fact: log_file_tower="tower_{{inventory_hostname}}_{{lookup('pipe','date +%Y%m%d-%H%M')}}.{{ext}}"
+- set_fact: path_log="{{tmp_folder}}/{{log_file}}"
+
+- name: Create {{tmp_folder}} folder
+  file: path={{tmp_folder}} state=directory
+  
+- file: mode=0777 path={{tmp_folder}}
+
+- name: Create {{path_log}} 
+  shell: "touch {{path_log}}"
+  
+- file: mode=0666 path={{path_log}}
+
+- name: "check size of {{path_log}}"
+  stat: path={{path_log}}  
+  register: x
+  failed_when: x.stat.size!=0
+  
+- shell: |
+         echo >> {{path_log}}  # first line
+  when: lines|default(False)==True       
+  

@@ -1,0 +1,63 @@
+---
+
+- name: Copy {{ad_cert_name}} 
+  copy:
+    src: '{{artifacts_dest}}{{ad_cert_name}}'
+    dest: "/etc/pki/ca-trust/source/anchors/{{ad_cert_name.split('.')[0]}}.pem"
+    remote_src: yes
+    
+- name: update ca 
+  shell: |
+         update-ca-trust extract 
+         update-ca-trust force-enable
+         update-ca-trust check
+          
+- name: import cert keytool
+  shell: |
+        /usr/bin/keytool -import -file /etc/pki/ca-trust/source/anchors/{{ad_cert_name.split('.')[0]}}.pem \
+        -alias ambari-server -keystore {{ca_cert_path}} -storepass {{ca_cert_pass}} -noprompt -v
+  become_user: root        
+
+- meta: end_play ###########################################
+
+- name: setup cert 
+  shell: |
+         export JAVA_HOME={{postgres_java_rootfolder}}{{postgres_java_folder}} && PYTHONPATH=$PYTHONPATH:/usr/lib/ambari-server/lib /usr/sbin/ambari-server.py setup-security \
+         --security-option=setup-truststore --truststore-path={{ca_cert_path}} \
+         --truststore-type={{ca_cert_type}} --truststore-password={{ca_cert_pass}} --truststore-reconfigure 
+  become_user: root
+
+- name: import cert 
+  shell: |
+         export JAVA_HOME={{postgres_java_rootfolder}}{{postgres_java_folder}} && PYTHONPATH=$PYTHONPATH:/usr/lib/ambari-server/lib /usr/sbin/ambari-server.py setup-security \
+         --security-option=import-certificate --truststore-path={{ca_cert_path}} --truststore-type={{ca_cert_type}} --truststore-password={{ca_cert_pass}} \
+         --import-cert-path=/etc/pki/ca-trust/source/anchors/{{ad_cert_name.split('.')[0]}}.pem --import-cert-alias={{ad_cert_name.split('.')[0]}} 
+  become_user: root
+  
+- name: Restart ambari-server
+  service:
+    name: ambari-server
+    state: restarted
+
+- name: Wait for Ambari Server to start listening on port 8080
+  wait_for:
+    port: 8080
+    host: 0.0.0.0
+    delay: 1    
+
+ 
+- name: extract jce policy
+  shell: unzip -o -j -q {{artifacts_dest}}jce_policy-8.zip -d {{postgres_java_rootfolder}}{{postgres_java_folder}}
+  become_user: root  
+  
+- name: Restart ambari-server
+  service:
+    name: ambari-server
+    state: restarted
+
+- name: Wait for Ambari Server to start listening on port 8080
+  wait_for:
+    port: 8080
+    host: 0.0.0.0
+    delay: 1    
+  

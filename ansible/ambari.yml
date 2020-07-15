@@ -1,0 +1,577 @@
+---
+
+# ADD LDAP ##################################################################################################################
+- name: Configure ldap
+  hosts: master-worker # not all because of one repo on azure 
+  become: true
+  any_errors_fatal: True
+  vars:
+    deleterepo: false
+    extract_repo: false
+    artifacts_dest: "/tmp/pbis-open/"
+    create_dest: true 
+    owner_file: root
+    group_file: root
+    mode_file: 0750   
+    mode_folder: 0750  
+    artifactslist:
+       - { url: '{{download_url}}', name: 'pbis-open-9.1.0.551.linux.x86_64.rpm.sh' }  
+    donotexec: true # true=download -if false put it on the artifacts_dest folder manually   
+  roles:
+    - { role: config , download_repo: true }
+    - { role: config, add_ip: true }
+    - { role: config, add_ldap: true }
+  tags: 
+    - configure_ldap ##################
+    - prepare_dev 
+    - prepare_sit
+
+# ADD USER ##################################################################################################################
+- name: Configure User and set no password for ambari
+  hosts: master-worker 
+  become: true
+  any_errors_fatal: True
+  vars: 
+    passwd1: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          66376366663334656236346635373164323531363965623234636365666231643339373966353234
+          3439653838386361333037356662633234343030396563650a396364643236376463306164393161
+          66636531366461646263663566326639626462306663393962646132636666363561613361623538
+          3934666664306238360a326634663339356531633061373230636439666464633638663537613732
+          6632
+    passwd2: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          65343437633461363361656262636131383835633763653939323430393261656664626361313730
+          6530313736323332343430643930633662633232343539630a616432613634376533323238373262
+          64323332386665316465616434326237656239613137653439333266306165306462653265636534
+          3066393763666135300a303730643736303231663963396536626634303833363734623834623530
+          3630
+    passwd3: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          61396236613931313162323534386263353235323837646463613531643831386264323262323333
+          3734376265363234326361303963623730346436313463340a323338623837343632363331316635
+          35663133323837386139663630373336376162333034393063356335633539613837373831373636
+          3065636666633839650a366138363031343831643761626235323431343237336631633366336562
+          3163
+    u_mask: "022"
+    rhel_7:
+       - sshpass
+  roles:
+    - { role: config, add_user: true, user1: ambari }
+    - { role: config, add_sudoers: true, user1: ambari, sudoer: true, adgroup: "", adnetbios: "" }
+    - { role: config, add_sudoers: true, user1: root, sudoer: false, adgroup: "", adnetbios: "" }
+    - { role: config, add_sudoers: true, user1: "{{hadoop_admin}}", sudoer: true, adgroup: "{{hadoop_group}}" } # kerberos admin
+    - { role: config, yum: true, yum_install: true }
+    - { role: config, add_sshkey: true, user1: ambari }  
+    - { role: config, add_sshkey1: true, user1: root, passwd1: '{{passwd2}}', when: cloud=='onprem' } # skip this on cloud
+    - { role: config, add_sshkey2: true, user1: '{{hadoop_admin}}', passwd1: '{{passwd3}}' }
+  tags: 
+    - configure_user ##################
+    - prepare_dev
+    - prepare_sit
+
+# CONFIGURE SERVER ##############################################################################################################
+
+- name: Configure Server All
+  hosts: master-worker 
+  become: true
+  any_errors_fatal: True
+  vars:
+    rhel_7:
+      - epel-release
+      - deltarpm
+      - java-1.8.0-openjdk-devel.x86_64
+      - dos2unix
+      - python-requests 
+      - ntp
+      - python-deltarpm
+      - unzip  
+      - yum-plugin-priorities
+  roles:
+    - { role: config, yum: true, yum_install: true, yum_clean_all: true, yum_makecache: true }
+    - { role: config, selinux: true, reboot: false } 
+    - { role: config, misc2: true } 
+  tags: 
+    - configure_server ##################
+    - prepare_dev
+    - prepare_sit    
+
+
+# AMBARI BINARIES ##################################################################################################
+
+- name: Install Ambari Server Master
+  hosts: master # master
+  become: true
+  any_errors_fatal: True
+  vars:
+     ambariserverlist:
+        - ambari-server
+  roles:
+    - { role: config, ambari_server: true }
+  tags: 
+     - install_ambari_server
+     - ambari_binaries  ##################
+     - prepare_dev
+     - prepare_sit     
+
+- name: Install Ambari agent
+  hosts: master-worker # worker
+  become: true
+  any_errors_fatal: True
+  vars:
+     ambariserverlist:
+        - ambari-agent
+  roles:
+    - { role: config, ambari_server: true }
+  tags: 
+     - install_ambari_agent
+     - ambari_binaries ##################
+     - prepare_dev
+     - prepare_sit     
+
+# MOVE LOGS ################################################################################################################
+
+- name: Move logs server
+  hosts: master
+  become: true
+  any_errors_fatal: True
+  roles:
+    - { role: ambari, move_log_server: true }
+  tags: 
+     #- move_logs ##################
+     - move_log_server
+     #- prepare_dev
+     #- prepare_sit
+
+- name: Move logs agent
+  hosts: master-worker
+  become: true
+  any_errors_fatal: True
+  roles:
+    - { role: ambari, move_log_agent: true }
+  tags: 
+     #- move_logs ##################
+     - move_log_agent
+     #- prepare_dev
+     #- prepare_sit
+
+
+# AMBARI AGENT CONFIG AND RUN ################################################################################################
+               
+- name: Configure ambari-agent and run
+  hosts: master-worker 
+  become: true
+  any_errors_fatal: True
+  roles:
+    - { role: ambari, ambari_agent_run: true }
+  tags: 
+    - ambari_agent_run ##################
+    - prepare_dev
+    - prepare_sit     
+
+           
+# Setup Oracle db #####################################################################################################################
+
+# NOT YET TESTED
+- name: download jdbc /var/lib/ambari-server oracle
+  hosts: master
+  become: true
+  any_errors_fatal: True
+  vars:
+    deleterepo: false
+    extract_repo: false
+    create_dest: true 
+    group_file: root
+    mode_file: 0700 
+    mode_folder: 0755
+    group_folder: root
+    artifactslist:
+       - { url: '{{download_url}}', name: 'ojdbc8.jar' }  
+       - { url: '{{download_url}}', name: 'ojdbc8.jar' }  
+    donotexec: true # true=download -if false put it on the artifacts_dest folder manually   
+  roles:
+    - { role: config , download_repo: true, artifacts_dest: '/var/lib/ambari-server/', owner_folder: ambari, owner_file: ambari, when: database=='oracle' }    
+    - { role: config , download_repo: true, artifacts_dest: '/usr/share/java/', owner_folder: root, owner_file: root, when: database=='oracle'  }    
+    #- { role: ambari, ojdbc: true, artifacts_dest: '/var/lib/ambari-server/', owner_folder: ambari, group_folder: root, owner_file: ambari, group_file: root, when: database=='oracle' }
+    #- { role: ambari, ojdbc: true, artifacts_dest: '/usr/share/java/', owner_folder: root, group_folder: root, owner_file: root, group_file: root, when: database=='oracle' }
+  tags: 
+    - download_jdbc_oracle ##################   # NOT YET TESTED 
+    - prepare_dev
+    - prepare_sit
+                                 
+- name: Run ambari-server for Oracle
+  hosts: master
+  become: true
+  any_errors_fatal: True
+  vars:
+    user1: AMBARI
+  roles:
+    - { role: ambari, ambari_server_run_oracle: true, when: database=='oracle'  }
+  tags: 
+    - ambari_setup_oracle ##################   # NOT YET TESTED                   
+    - prepare_dev
+    - prepare_sit  
+
+# Setup Postgres db ####################################################################################################################     
+    
+- name: CREATE POSTGRES DB create_db_postgres=true
+  hosts: sql
+  any_errors_fatal: true
+  become: true  
+  roles:
+    - { role: postgres, create_postgres_db: true, create_db_postgres: true, when: database=='postgres' }
+  tags: 
+    - create_postgres
+    - ambari_setup_postgres ################## 
+    - prepare_dev
+    - prepare_sit    
+
+- name: RECREATE POSTGRES DB create_db_postgres=false
+  hosts: sql
+  any_errors_fatal: true
+  become: true  
+  roles:
+    - { role: postgres, create_postgres_db: true, create_db_postgres: false, when: database=='postgres' }
+  tags: 
+    - recreate_postgres
+    #- ambari_setup_postgres ################## # only for recreate
+      
+- name: Apply the ambari jdk for postgres 
+  hosts: master-worker
+  any_errors_fatal: true
+  become: true
+  vars:
+    deleterepo: true
+    extract_repo: true
+    artifacts_dest: "{{postgres_java_rootfolder}}"
+    create_dest: true 
+    owner_file: root
+    group_file: root
+    mode_file: 0755      
+    owner_folder: root
+    group_folder: root
+    mode_folder: 0755      
+    artifactslist:
+       - { url: '{{download_url}}', name: 'jdk-8u112-linux-x64.tar.gz', folder: '{{postgres_java_folder}}', when: database=='postgres' }  
+    donotexec: true # true=download -if false put it on the artifacts_dest folder manually
+  roles:
+    - { role: config , download_repo: true }
+  tags: 
+     - ambari_setup_postgres ################## 
+     - download_jdk
+     - prepare_dev
+     - prepare_sit
+     
+- name: Apply the ambari-server permission
+  hosts: master
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: ambari, ambari_setup_permission: true  }
+  tags: 
+    - ambari_setup_postgres ##################
+    - ambari_setup_permission
+    - prepare_dev
+    - prepare_sit  
+  
+- name: Apply the ambari-server setup for Postgres
+  hosts: master
+  any_errors_fatal: true
+  become: true
+  roles:
+    #- { role: ambari, ambari_setup_repository: true } # DOES NOT WORK, USE WORKAROUND INSTEAD
+    - { role: ambari, ambari_setup_postgres: true, when: database=='postgres'  }
+  tags: 
+    - ambari_setup_postgres ##################
+    - prepare_dev
+    - prepare_sit    
+
+- name: Restart ambari-agent
+  hosts: master-worker
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: ambari, ambari_agent_restart: true, when: database=='postgres'  }
+  tags: 
+    - ambari_setup_postgres ##################
+    - restart_ambari_agent
+    - prepare_dev    
+    - prepare_sit     
+     
+
+# AMBARI BLUEPRINT ####################################################################################################################
+
+- name: Yum clean to fix zookeeper
+  hosts: master-worker
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: config, yum: true, yum_clean_all: true, yum_makecache: false } # testing 
+  tags: 
+    - ambari_blueprint ##################  
+    #- prepare_dev
+    #- prepare_sit
+
+- name: Apply the ambari-server blueprint
+  hosts: master
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: ambari, ambari_blueprint: true }
+  tags: 
+    - ambari_blueprint ##################
+    #- prepare_dev    
+    #- prepare_sit    
+     
+- name: Copy ambari yum to all
+  hosts: master-worker
+  become: true
+  any_errors_fatal: True  
+  vars:
+    hostrepo: "{{groups['yum'][0]}}" 
+  roles:
+    - { role: config , copyrepo: true, ambarirepo: false, hdprepo: true, hdpcount: 2 }
+  tags: 
+    - ambari_blueprint ##################
+    #- prepare_dev
+    #- prepare_sit     
+
+# setup_cacerts and add kerberos service#############################################################################################################
+
+- name: Configure kerberos first
+  hosts: master-worker
+  become: true
+  any_errors_fatal: True
+  vars:
+    rhel_7:
+       - krb5-server 
+       - krb5-devel 
+       - krb5-workstation 
+       - krb5-libs 
+       - rng-tools
+  roles:
+    - { role: config, yum: true, yum_install: true }
+    - { role: config , add_kerberos: true }
+  tags: 
+    - setup_cacerts ##################   
+    - add_kerberos
+
+- name: Configure java home
+  hosts: master-worker
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: config , add_javahome: true }
+  tags: 
+     - setup_cacerts ##################
+     - add_javahome   
+
+- name: Configure kerberos
+  hosts: master
+  any_errors_fatal: true
+  become: true
+  vars:
+    rhel_7:
+       - ca-certificates
+    ad_cert_name: 'activedirectory.cer' ############## NEED TO BE CER EXTENSION AND UPLOAD IT TO DOWNLOAD URL
+    deleterepo: false
+    extract_repo: false
+    artifacts_dest: "/tmp/jce/"
+    create_dest: true 
+    owner_file: root
+    group_file: root
+    mode_file: 0755      
+    mode_folder: 0755      
+    artifactslist:
+       - { url: '{{download_url}}', name: "jce_policy-8.zip" }  
+       - { url: '{{download_url}}', name: "{{ad_cert_name}}", mode_file: 644 }  
+    donotexec: true  
+  roles:
+    #- { role: config, yum: true, yum_install: true }
+    #- { role: config , download_repo: true }  
+    #- { role: pki, setup_cacerts: true }       
+    - { role: config, add_kerberos_service: true }     
+  tags: 
+     - setup_cacerts ##################
+     - setup_cacerts2   
+          
+              
+# ssl #############################################################################################################
+
+- name: Download the cert  # tested only in office with venafi cert
+  hosts: master
+  any_errors_fatal: true
+  become: true
+  vars:
+    deleterepo: true
+    extract_repo: true
+    artifacts_dest: "{{main_pki_folder}}"
+    create_dest: true 
+    owner_file: root
+    group_file: root
+    mode_file: 0755      
+    mode_folder: 0755      
+    artifactslist:
+       - { url: '{{download_url}}', name: "{{mcert_file}}" }  
+    donotexec: true # true=download -if false put it on the artifacts_dest folder manually
+  roles:
+    - { role: config , download_repo: true, when: cert_type=='multi' }       
+  tags: 
+     - jks_enroll ##################   
+     - download_cert        
+     
+- name: Apply the ambari-server PKI JKS
+  hosts: master
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: pki, jks_enroll: true, when: cert_type=='self'  }
+    - { role: pki, jks_import: true, when: cert_type=='self'  }
+    - { role: pki, jks_import_multi: true, when: cert_type=='multi' }
+    - { role: pki, run_ambari_ssl: true }
+  tags: 
+     - jks_enroll ##################
+
+- name: Restart ambari-agents
+  hosts: master-worker
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: ambari, ambari_agent_restart: true }
+  tags: 
+     - jks_enroll ##################
+
+- name: Restart ambari-server
+  hosts: master
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: ambari, ambari_server_start: true }
+  tags: 
+     - jks_enroll ##################
+     - ambari_server_start
+
+
+# RESET AMBARI #########################################################################################################
+# UP TO SSL CREATION
+
+- name: RESET PKI AMBARI server
+  hosts: master
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: pki, reset_pki: true }
+    - { role: ambari, reset_ambari_server: true }
+  tags: 
+     - reset_ambari ##################
+
+- name: RESET PKI AMBARI agent
+  hosts: master-worker
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: ambari, reset_ambari_agent: true }
+  tags: 
+     - reset_ambari ##################
+
+- name: RESET POSTGRES
+  hosts: sql
+  any_errors_fatal: true
+  become: true  
+  roles:
+    - { role: postgres, reset_postgres: true }
+  tags: 
+     - reset_postgres
+     - reset_ambari ##################     
+                                      
+                                      
+# additional configurations ################################################################################################
+
+- name: Disable tmp cleanup
+  hosts: master-worker
+  become: true
+  any_errors_fatal: True
+  roles:
+    - { role: config, disable_tmp_cleanup: true }
+  tags: 
+     - disable_tmp_cleanup ##################
+                                                            
+- name: Copy ambarisudo
+  hosts: master-worker  
+  become: true
+  any_errors_fatal: True
+  roles:
+    - { role: config, copy_ambarisudo: true }
+  tags: 
+     - copy_ambarisudo ##################
+                                                            
+- name: Restart ambari-agents
+  hosts: master-worker
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: ambari, ambari_agent_start: true }
+  tags: 
+     - ambari_agent_start
+                                                            
+                                                            
+- name: Stop ambari-agents
+  hosts: master-worker
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: ambari, ambari_agent_stop: true }
+  tags: 
+     - ambari_agent_stop
+     - ambari_stop
+
+- name: stop ambari-server
+  hosts: master
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: ambari, ambari_server_start: true }
+  tags: 
+     - ambari_server_stop
+     - ambari_stop
+
+- name: ambari limits
+  hosts: master-worker  
+  become: true
+  any_errors_fatal: True
+  roles:
+    - { role: config, user1: ambari, limits: true }
+  tags: 
+     - ambari_limits ##################
+                                                                 
+
+- name: change ambari password
+  hosts: master-worker 
+  become: true
+  any_errors_fatal: True
+  vars: 
+    passwd1: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          34343137656463343833666238363737366630336631383037666139616535343166366266353637
+          3334336162663361356136656332666130306338393734330a386339653865633139373937303061
+          39626334383036353139313830356266323533346133343534666530326266356163653466616533
+          3739303531333830630a376532353035343934393534346461623966633931306164393766373735
+          6234
+  roles:
+    - { role: config, add_user: true, user1: ambari }
+    #- { role: ambari, ambari_agent_restart: true }
+  tags: 
+     - ambari_password_reset ##################
+     - ambari_password_reset1
+                                                                     
+- name: change ambari password
+  hosts: master
+  become: true
+  any_errors_fatal: True
+  roles:
+    - { role: ambari, ambari_server_stop: true }
+    - { role: ambari, ambari_server_start: true }
+  tags: 
+     - ambari_password_reset ##################
+     - ambari_server_restart                                                                     
+                                                                     

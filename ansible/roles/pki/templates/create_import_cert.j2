@@ -1,0 +1,11 @@
+#!/bin/bash
+
+export JAVA_HOME={{postgres_java_rootfolder}}{{postgres_java_folder}} && PYTHONPATH=$PYTHONPATH:/usr/lib/ambari-server/lib /usr/sbin/ambari-server.py setup-security --security-option=setup-truststore --truststore-path={{ca_cert_path}} --truststore-type={{ca_cert_type}} --truststore-password={{ca_cert_pass}} -v
+sleep 1
+export JAVA_HOME={{postgres_java_rootfolder}}{{postgres_java_folder}} && PYTHONPATH=$PYTHONPATH:/usr/lib/ambari-server/lib /usr/sbin/ambari-server.py setup-security --security-option=import-certificate --truststore-path={{ca_cert_path}} --truststore-type={{ca_cert_type}} --truststore-password={{ca_cert_pass}} --import-cert-path=/etc/pki/ca-trust/source/anchors/{{ad_cert_name.split('.')[0]}}.pem --import-cert-alias={{ad_cert_name.split('.')[0]}} -v 
+sleep 1
+export JAVA_HOME={{postgres_java_rootfolder}}{{postgres_java_folder}} && PYTHONPATH=$PYTHONPATH:/usr/lib/ambari-server/lib /usr/sbin/ambari-server.py restart
+sleep 1
+unzip -o -j -q {{artifacts_dest}}jce_policy-8.zip -d {{postgres_java_rootfolder}}{{postgres_java_folder}}
+sleep 1
+export JAVA_HOME={{postgres_java_rootfolder}}{{postgres_java_folder}} && PYTHONPATH=$PYTHONPATH:/usr/lib/ambari-server/lib /usr/sbin/ambari-server.py restart

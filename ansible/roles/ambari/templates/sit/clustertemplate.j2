@@ -1,0 +1,48 @@
+{
+	"blueprint": "{{clustername}}",
+	"default_password": "{{default_password}}",
+	"host_groups": [{
+		"name": "host_group_1",
+		"hosts": [{
+			"fqdn": "{{hostvars[groups['master'][0]].inventory_hostname}}"
+		}]
+	}, {
+		"name": "host_group_2",
+		"hosts": [{
+			"fqdn": "{{hostvars[groups['master-member'][0]].inventory_hostname}}"
+		}]
+	}, {
+		"name": "host_group_3",
+		"hosts": [{
+			"fqdn": "{{hostvars[groups['kafka'][0]].inventory_hostname}}"
+		}]
+	}, {
+		"name": "host_group_4",
+		"hosts": [{
+			"fqdn": "{{hostvars[groups['kafka'][1]].inventory_hostname}}"
+		}]
+	}, {
+		"name": "host_group_5",
+		"hosts": [{
+			"fqdn": "{{hostvars[groups['kafka'][2]].inventory_hostname}}"
+		}]
+	}, {
+		"name": "host_group_6",
+		"hosts": [{
+			"fqdn": "{{hostvars[groups['spark'][0]].inventory_hostname}}"
+		}]
+	}, {
+		"name": "host_group_7",
+		"hosts": [{
+			"fqdn": "{{hostvars[groups['spark'][1]].inventory_hostname}}"
+		}]
+	}, {
+		"name": "host_group_8",
+		"hosts": [{
+			"fqdn": "{{hostvars[groups['spark'][2]].inventory_hostname}}"
+		}]
+	}],
+	"Clusters": {
+		"cluster_name": "{{clustername}}"
+	}
+}

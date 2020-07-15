@@ -1,0 +1,23 @@
+---
+
+network_list:
+  - { ip: "{{hostvars[groups['master'][0]].ansible_host}}", server: "{{hostvars[groups['master'][0]].inventory_hostname.split('.')[0]}}", fqdn: "{{hostvars[groups['master'][0]].inventory_hostname}}"  }
+  - { ip: "{{hostvars[groups['master-member'][0]].ansible_host}}", server: "{{hostvars[groups['master-member'][0]].inventory_hostname.split('.')[0]}}", fqdn: "{{hostvars[groups['master-member'][0]].inventory_hostname}}" }
+  - { ip: "{{hostvars[groups['kafka'][0]].ansible_host}}", server: "{{hostvars[groups['kafka'][0]].inventory_hostname.split('.')[0]}}", fqdn: "{{hostvars[groups['kafka'][0]].inventory_hostname}}" }
+  - { ip: "{{hostvars[groups['kafka'][1]].ansible_host}}", server: "{{hostvars[groups['kafka'][1]].inventory_hostname.split('.')[0]}}", fqdn: "{{hostvars[groups['kafka'][1]].inventory_hostname}}" }
+  - { ip: "{{hostvars[groups['kafka'][2]].ansible_host}}", server: "{{hostvars[groups['kafka'][2]].inventory_hostname.split('.')[0]}}", fqdn: "{{hostvars[groups['kafka'][2]].inventory_hostname}}" }
+  - { ip: "{{hostvars[groups['spark'][0]].ansible_host}}", server: "{{hostvars[groups['spark'][0]].inventory_hostname.split('.')[0]}}", fqdn: "{{hostvars[groups['spark'][0]].inventory_hostname}}" }
+  - { ip: "{{hostvars[groups['spark'][1]].ansible_host}}", server: "{{hostvars[groups['spark'][1]].inventory_hostname.split('.')[0]}}", fqdn: "{{hostvars[groups['spark'][1]].inventory_hostname}}" }
+  - { ip: "{{hostvars[groups['spark'][2]].ansible_host}}", server: "{{hostvars[groups['spark'][2]].inventory_hostname.split('.')[0]}}", fqdn: "{{hostvars[groups['spark'][2]].inventory_hostname}}" }
+  - { ip: "{{hostvars[groups['sql'][0]].ansible_host}}", server: "{{hostvars[groups['sql'][0]].inventory_hostname.split('.')[0]}}", fqdn: "{{hostvars[groups['sql'][0]].inventory_hostname}}" }           
+  
+network_list2:
+  - { ip: "{{hostvars[groups['master'][0]].ansible_host}}", server: "{{hostvars[groups['master'][0]].inventory_hostname.split('.')[0]}}" }
+  - { ip: "{{hostvars[groups['master-member'][0]].ansible_host}}", server: "{{hostvars[groups['master-member'][0]].inventory_hostname.split('.')[0]}}" }
+  - { ip: "{{hostvars[groups['kafka'][0]].ansible_host}}", server: "{{hostvars[groups['kafka'][0]].inventory_hostname.split('.')[0]}}" }
+  - { ip: "{{hostvars[groups['kafka'][1]].ansible_host}}", server: "{{hostvars[groups['kafka'][1]].inventory_hostname.split('.')[0]}}" }
+  - { ip: "{{hostvars[groups['kafka'][2]].ansible_host}}", server: "{{hostvars[groups['kafka'][2]].inventory_hostname.split('.')[0]}}" }
+  - { ip: "{{hostvars[groups['spark'][0]].ansible_host}}", server: "{{hostvars[groups['spark'][0]].inventory_hostname.split('.')[0]}}" }
+  - { ip: "{{hostvars[groups['spark'][1]].ansible_host}}", server: "{{hostvars[groups['spark'][1]].inventory_hostname.split('.')[0]}}" }
+  - { ip: "{{hostvars[groups['spark'][2]].ansible_host}}", server: "{{hostvars[groups['spark'][2]].inventory_hostname.split('.')[0]}}" }
+    

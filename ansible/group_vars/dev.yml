@@ -1,0 +1,2 @@
+disk_items:
+  - { server0: dbdev, disk0: sdc, partition0: 1, fsname0: '/repo', vgname0: repovg, lvname0: repolv, size0: +100%FREE } 

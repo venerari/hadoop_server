@@ -1,0 +1,31 @@
+---
+
+#- name: Configure User and set no password for ambari, root pddfadmin
+#  hosts: all
+#  become: true
+#  any_errors_fatal: True
+#  vars:
+#    y: 
+#  roles:
+#    - { role: config, test: true, user1: ambari }
+#  tags: 
+#    - sshkey
+
+- name: test sudo
+  hosts: master
+  become: true
+  gather_facts: false
+  tasks: 
+     - ping:
+    # - lvg:
+    #    vg: hadoop1vg
+    #    pvs: /dev/sdc2
+    #    pesize: 4
+    #   register: x
+      
+    # - debug: msg='failed'
+    #   when: x is failed 
+ 
+    # - debug: msg='success'
+    #   when: x is not failed 
+ 

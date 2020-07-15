@@ -1,0 +1,14 @@
+tmp_default: '/usr/lib/tmpfiles.d/tmp.conf'
+tmp_file_path: '/etc/tmpfiles.d/'
+hadoop1log_path: '/hadoop/1/log/'
+user1: ambari
+u_mask: "022" 
+run_master_server: true # false for testing
+run_master_member: true # false for dev
+
+soft_no_file: 4096
+hard_no_file: 65536
+soft_nproc: 2047
+hard_nproc: 16384
+
+clustername: "hadoop{{env}}" 

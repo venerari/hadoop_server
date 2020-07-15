@@ -1,0 +1,180 @@
+---
+
+- name: Get disk info and mail it 
+  hosts: all 
+  any_errors_fatal: True
+  vars:
+    tmp_folder: /tmp/partition_disk                    
+    include_mpath: false
+    letters:           # these are the disks like /dev/sdb /dev/sdc -add more ...
+       - b
+       - c
+       - d
+       - e
+       - f
+       - g
+       - h
+       - i 
+       - j
+       - k
+    raw_prefix: "" 
+    path_log:
+    log_file:
+    filename1: email
+    ext: txt    
+  roles: 
+    - { role: mail_logs, create_log: true, lines: true } 
+    - { role: disk, get_raw_disk_prefix: true, become: true, include_mpath: false }
+    - { role: disk, get_raw_disk: true, become: true }
+    - { role: mail_logs, mail: true } 
+  tags: get_raw_disk   
+  
+- name: Create inventory
+  hosts: all 
+  vars:
+    tmp_folder: /tmp/partition_disk
+    fs_name: /opt/tools      # extra vars --file system name -ex /opt/tools or /hadoop
+    logical_name: tools # extra vars --logical name like tools --toolsvg --toolslv
+    multiple_disk: false  # extra vars --true is designed for /hadoop/1, /hadoop/2 partitioning, false for single partition like dynatrace
+                         # meaning multiple disk per server or sing disk per server
+    count_disk: 1        # how many disk you want to create on multiple_disk=true
+    letters:             # these are the disks like /dev/sdb /dev/sdc -add more ...
+       - b
+       - c
+       - d
+       - e
+       - f
+       - g
+       - h
+       - i 
+       - j
+       - k
+    skip_disks:   # extra-vars or survey ex server1sdb or edit the extra-vars ex - server1sde  --it will skop the disk sde on server1
+    raw_prefix: "" 
+    partition: 1
+    disk_size: +100%FREE
+    path_log:
+    log_file:
+    filename1: email
+    ext: txt    
+  roles: 
+    - { role: mail_logs, create_log: true, lines: false }   
+    - { role: disk, get_raw_disk_prefix: true, become: true, include_mpath: false }
+    - { role: disk, create_inventory: true, become: true }
+    - { role: mail_logs, mail: true, send_mail: false } 
+  tags: create_inventory    
+    
+- name: Create partition   
+  hosts: all
+  become: true
+  any_errors_fatal: True
+  vars: 
+    disk_size_2check: 10     # not use?
+    continue_x: true  
+  tasks:
+    - include_vars: "group_vars/{{env}}.yml"
+    - name: Loop over role      
+      include_role:
+       name: disk
+      vars:
+        disk_process: DPVLFM   # D=create raw disk P=physical volume V=volumegroup L=logicalvolume F=filesystem M=mount
+        create_partition_nolog: true
+        server: "{{ item.server0 }}"
+        disk1:  "{{ item.disk0 }}"
+        pvname: "{{ item.disk0 }}"
+        partition: "{{ item.partition0 }}"
+        fsname: "{{ item.fsname0 }}"
+        vgname: "{{ item.vgname0 }}"
+        lvname: "{{ item.lvname0 }}"
+        size: "{{ item.size0 }}"
+      with_items: 
+         - "{{disk_items}}"
+  tags: create_partition
+
+- name: Check vglv name
+  hosts: all 
+  vars:
+    tmp_folder: /tmp/partition_disk                    
+    letters:     # extra-vars or survey
+    skip_disks:   # extra-vars or survey ex server1sdb or edit the extra-vars ex - pddfbcclpfmas02sde
+    raw_prefix: "" 
+    path_log:
+    log_file:
+    path_2check: 
+        - '/hadoop/1'
+        - '/hadoop/2'
+    filename1: email
+    datestamp: "{{lookup('pipe','date +%Y%m%d')}}"
+    ext: txt    
+  roles: 
+    - { role: mail_logs, create_log: true, lines: true } 
+    - { role: disk, check_vglv_name: true }   
+    - { role: mail_logs, mail: true } 
+  tags: check_vglv_name   
+  
+- name: Resize Disk (logical)  
+  hosts: all
+  become: true
+  any_errors_fatal: True
+  #disk_items:              # extra variables
+  tasks:
+    - name: Loop over role
+      include_role:
+       name: disk
+      vars:
+        resize_logical: true
+        server: "{{ item.server0 }}"
+        #disk1:  "{{ item.disk0 }}"
+        #pvname: "{{ item.disk0 }}"
+        #fsname: "{{ item.fsname0 }}"
+        vgname: "{{ item.vgname0 }}"
+        lvname: "{{ item.lvname0 }}"
+        size: "{{ item.size0 }}"
+      with_items: 
+         - "{{disk_items}}"
+  tags: resize_disk    
+
+- name: Remove partition   
+  hosts: all
+  become: true
+  any_errors_fatal: True
+  #disk_items:              # extra variables
+  tasks:
+    - name: Loop over role
+      include_role:
+       name: disk
+      vars:
+        disk_process: DPVLFM
+        force: yes
+        remove_partition_nolog: true
+        server: "{{ item.server0 }}"
+        disk1:  "{{ item.disk0 }}"
+        pvname: "{{ item.disk0 }}"
+        fsname: "{{ item.fsname0 }}"
+        vgname: "{{ item.vgname0 }}"
+        lvname: "{{ item.lvname0 }}" # size is not needed
+      with_items: 
+         - "{{disk_items}}"
+  tags: remove_partition
+  
+- name: vgextend 
+  hosts: all
+  become: true
+  any_errors_fatal: True
+  #disk_items:              # extra variables
+  tasks:
+    - name: Loop over role
+      include_role:
+       name: disk
+      vars:
+        vgextend: true
+        server: "{{ item.server0 }}"
+        disk1:  "{{ item.disk0 }}"
+        partition: "{{ item.partition0 }}"
+        vgname: "{{ item.vgname0 }}"
+        pe_size: "{{ item.pe_size0 }}"
+      with_items: 
+         - "{{disk_items}}"
+  tags: vgextend  
+    
+   

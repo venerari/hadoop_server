@@ -1,0 +1,20 @@
+---
+
+- include_tasks: deletelogs.yml
+  when: deletelogs|default(False)==True     
+
+- include_tasks: create_log.yml
+  when: create_log|default(False)==True  
+  
+- include_tasks: mail.yml
+  when: mail|default(False)==True
+          
+- include_tasks: deletelogs_win.yml
+  when: deletelogs_win|default(False)==True     
+
+- include_tasks: create_log_win.yml
+  when: create_log_win|default(False)==True  
+  
+- include_tasks: mail_win.yml
+  when: mail_win|default(False)==True
+          

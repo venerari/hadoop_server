@@ -1,0 +1,44 @@
+---
+
+- name: Fetching logs to Tower
+  fetch:
+    src: "{{path_log_win}}"
+    dest: "./{{log_file_tower_win}}"
+    flat: yes
+ 
+- name: Compile logs to {{filename1}}.{{ext}}    
+  shell: cat ./{{log_file_tower_win}} >> ./{{filename1}}.{{ext}}
+  delegate_to: localhost # ansible
+  
+- shell: 'echo {{email_to2}} - {{email_group}}'     
+  delegate_to: localhost # ansible
+  run_once: true  
+
+- block:       
+
+    - name: Send email to group.
+      mail:
+        subject: '{{email_subject}}'
+        host: '{{smtp_server}}'
+        port: 25
+        body: '{{email_body}}'
+        from: '{{email_group}}'
+        to: '{{email_to2}}'  # only email_to2 works in windows    
+        attach: './{{filename1}}.{{ext}}'
+      delegate_to: localhost # ansible
+      run_once: true  
+      ignore_errors: true
+    
+    - debug:
+        msg: '{{email_subject}} sent to {{email_to2}}.'
+      run_once: true   
+  
+  when: send_mail    
+  
+
+- name: "Copy {{filename1}}.{{ext}} to first client {{tmp_folder_win}}\\{{filename1}}.{{ext}} **second copy"
+  win_copy:
+    src: './{{filename1}}.{{ext}}'
+    dest: '{{tmp_folder_win}}\\{{filename1}}.{{ext}}'
+  run_once: true
+  ignore_errors: true

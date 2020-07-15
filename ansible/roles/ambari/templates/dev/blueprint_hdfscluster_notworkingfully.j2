@@ -1,0 +1,254 @@
+{
+    "Blueprints": {
+        "blueprint_name": "{{clustername}}",
+        "stack_name": "HDP",
+        "stack_version": "3.1"
+    },
+    "settings": [
+        {
+            "recovery_settings": []
+        },
+        {
+            "component_settings": []
+        }
+    ],
+    "host_groups": [
+        {
+            "name": "host_group_0",
+            "components": [
+                {
+                    "name": "YARN_CLIENT"
+                },
+                {
+                    "name": "HDFS_CLIENT"
+                },
+                {
+                    "name": "ZKFC"
+                },
+                {
+                    "name": "HST_SERVER"
+                },
+                {
+                    "name": "METRICS_MONITOR"
+                },
+                {
+                    "name": "NAMENODE"
+                },
+                {
+                    "name": "ZOOKEEPER_CLIENT"
+                },
+                {
+                    "name": "YARN_REGISTRY_DNS"
+                },
+                {
+                    "name": "ACTIVITY_ANALYZER"
+                },
+                {
+                    "name": "TIMELINE_READER"
+                },
+                {
+                    "name": "ACTIVITY_EXPLORER"
+                },
+                {
+                    "name": "HST_AGENT"
+                },
+                {
+                    "name": "MAPREDUCE2_CLIENT"
+                },
+                {
+                    "name": "ZOOKEEPER_SERVER"
+                },
+                {
+                    "name": "AMBARI_SERVER"
+                },
+                {
+                    "name": "JOURNALNODE"
+                },
+                {
+                    "name": "METRICS_GRAFANA"
+                },
+                {
+                    "name": "RESOURCEMANAGER"
+                }
+            ],
+            "cardinality": "1"
+        },
+        {
+            "name": "host_group_1",
+            "components": [
+                {
+                    "name": "NODEMANAGER"
+                },
+                {
+                    "name": "HST_AGENT"
+                },
+                {
+                    "name": "MAPREDUCE2_CLIENT"
+                },
+                {
+                    "name": "YARN_CLIENT"
+                },
+                {
+                    "name": "HDFS_CLIENT"
+                },
+                {
+                    "name": "ZOOKEEPER_SERVER"
+                },
+                {
+                    "name": "DATANODE"
+                },
+                {
+                    "name": "METRICS_MONITOR"
+                },
+                {
+                    "name": "JOURNALNODE"
+                },
+                {
+                    "name": "ZOOKEEPER_CLIENT"
+                },
+                {
+                    "name": "METRICS_COLLECTOR"
+                }
+            ],
+            "cardinality": "1"
+        },
+        {
+            "name": "host_group_2",
+            "components": [
+                {
+                    "name": "NODEMANAGER"
+                },
+                {
+                    "name": "YARN_CLIENT"
+                },
+                {
+                    "name": "HDFS_CLIENT"
+                },
+                {
+                    "name": "ZKFC"
+                },
+                {
+                    "name": "HISTORYSERVER"
+                },
+                {
+                    "name": "METRICS_MONITOR"
+                },
+                {
+                    "name": "NAMENODE"
+                },
+                {
+                    "name": "ZOOKEEPER_CLIENT"
+                },
+                {
+                    "name": "HST_AGENT"
+                },
+                {
+                    "name": "MAPREDUCE2_CLIENT"
+                },
+                {
+                    "name": "ZOOKEEPER_SERVER"
+                },
+                {
+                    "name": "DATANODE"
+                },
+                {
+                    "name": "JOURNALNODE"
+                },
+                {
+                    "name": "APP_TIMELINE_SERVER"
+                }
+            ],
+            "cardinality": "1"
+        },
+        {
+            "name": "datanode",
+            "components": [
+                {
+                    "name": "YARN_CLIENT"
+                },
+                {
+                    "name": "DATANODE"
+                },
+                {
+                    "name": "METRICS_MONITOR"
+                },
+                {
+                    "name": "NODEMANAGER"
+                }
+            ],
+            "cardinality": "3+"
+        }
+    ],
+    "configurations": [
+        {
+            "core-site": {
+                "properties": {
+                    "fs.trash.interval": "4320",
+                    "fs.defaultFS": "hdfs://{{clustername}}",
+                    "hadoop.proxyuser.yarn.hosts": "%HOSTGROUP::host_group_1%,%HOSTGROUP::host_group_2%",
+                    "hadoop.proxyuser.hive.hosts": "%HOSTGROUP::host_group_1%,%HOSTGROUP::host_group_2%",
+                    "ha.zookeeper.quorum": "%HOSTGROUP::host_group_1%:2181,%HOSTGROUP::host_group_2%:2181,%HOSTGROUP::host_group_0%:2181"
+                }
+            }
+        },
+        {
+            "hdfs-site": {
+                "properties": {
+                    "dfs.namenode.safemode.threshold-pct": "0.99",
+                    "dfs.client.failover.proxy.provider.{{clustername}}": "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider",
+                    "dfs.ha.automatic-failover.enabled": "true",
+                    "dfs.ha.fencing.methods": "shell(/bin/true)",
+                    "dfs.ha.namenodes.{{clustername}}": "nn1,nn2",
+                    "dfs.namenode.http-address.{{clustername}}.nn1": "%HOSTGROUP::host_group_1%:50070",
+                    "dfs.namenode.http-address.{{clustername}}.nn2": "%HOSTGROUP::host_group_2%:50070",
+                    "dfs.namenode.https-address.{{clustername}}.nn1": "%HOSTGROUP::host_group_1%:50470",
+                    "dfs.namenode.https-address.{{clustername}}.nn2": "%HOSTGROUP::host_group_2%:50470",
+                    "dfs.namenode.rpc-address.{{clustername}}.nn1": "%HOSTGROUP::host_group_1%:8020",
+                    "dfs.namenode.rpc-address.{{clustername}}.nn2": "%HOSTGROUP::host_group_2%:8020",
+                    "dfs.namenode.shared.edits.dir": "qjournal://%HOSTGROUP::host_group_1%:8485;%HOSTGROUP::host_group_2%:8485;%HOSTGROUP::host_group_0%:8485/{{clustername}}",
+                    "dfs.nameservices": "{{clustername}}"
+                }
+            }
+        },
+        {
+            "mapred-site": {
+                "properties": {
+                    "mapreduce.job.reduce.slowstart.completedmaps": "0.7",
+                    "mapreduce.map.output.compress": "true",
+                    "mapreduce.output.fileoutputformat.compress": "true"
+                }
+            }
+        },
+        {
+            "yarn-site": {
+                "properties": {
+                    "hadoop.registry.rm.enabled": "true",
+                    "hadoop.registry.zk.quorum": "%HOSTGROUP::host_group_1%:2181,%HOSTGROUP::host_group_2%:2181,%HOSTGROUP::host_group_0%:2181",
+                    "yarn.log.server.url": "http://%HOSTGROUP::host_group_2%:19888/jobhistory/logs",
+                    "yarn.resourcemanager.address": "%HOSTGROUP::host_group_1%:8050",
+                    "yarn.resourcemanager.admin.address": "%HOSTGROUP::host_group_1%:8141",
+                    "yarn.resourcemanager.cluster-id": "yarn-cluster",
+                    "yarn.resourcemanager.ha.automatic-failover.zk-base-path": "/yarn-leader-election",
+                    "yarn.resourcemanager.ha.enabled": "true",
+                    "yarn.resourcemanager.ha.rm-ids": "rm1,rm2",
+                    "yarn.resourcemanager.hostname": "%HOSTGROUP::host_group_1%",
+                    "yarn.resourcemanager.hostname.rm1": "%HOSTGROUP::host_group_1%",
+                    "yarn.resourcemanager.hostname.rm2": "%HOSTGROUP::host_group_2%",
+                    "yarn.resourcemanager.recovery.enabled": "true",
+                    "yarn.resourcemanager.resource-tracker.address": "%HOSTGROUP::host_group_1%:8025",
+                    "yarn.resourcemanager.scheduler.address": "%HOSTGROUP::host_group_1%:8030",
+                    "yarn.resourcemanager.store.class": "org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore",
+                    "yarn.resourcemanager.webapp.address": "%HOSTGROUP::host_group_1%:8088",
+                    "yarn.resourcemanager.webapp.address.rm1": "%HOSTGROUP::host_group_1%:8088",
+                    "yarn.resourcemanager.webapp.address.rm2": "%HOSTGROUP::host_group_2%:8088",
+                    "yarn.resourcemanager.webapp.https.address": "%HOSTGROUP::host_group_1%:8090",
+                    "yarn.resourcemanager.webapp.https.address.rm1": "%HOSTGROUP::host_group_1%:8090",
+                    "yarn.resourcemanager.webapp.https.address.rm2": "%HOSTGROUP::host_group_2%:8090",
+                    "yarn.timeline-service.address": "%HOSTGROUP::host_group_1%:10200",
+                    "yarn.timeline-service.webapp.address": "%HOSTGROUP::host_group_1%:8188",
+                    "yarn.timeline-service.webapp.https.address": "%HOSTGROUP::host_group_1%:8190"
+                }
+            }
+        }
+    ]
+}

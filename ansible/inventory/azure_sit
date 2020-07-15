@@ -1,0 +1,36 @@
+# change also all.yml -- ad_admin_password, ad_ip, download_url *new
+# you need also activedirectory.cer uploaded to download url
+# change also clustername
+# change also blueprint.json host and domain
+
+[master]
+hdmas1sit.test015.org ansible_host=10.0.10.11
+
+[master-member] 
+hdmas2sit.test015.org ansible_host=10.0.10.12
+
+[kafka]
+hdkfk1sit.test015.org ansible_host=10.0.10.13
+hdkfk2sit.test015.org ansible_host=10.0.10.14
+hdkfk3sit.test015.org ansible_host=10.0.10.15
+
+[spark]
+hdspk1sit.test015.org ansible_host=10.0.10.16
+hdspk2sit.test015.org ansible_host=10.0.10.17
+hdspk3sit.test015.org ansible_host=10.0.10.18
+
+[worker:children]
+kafka
+spark
+
+[master-worker:children]
+kafka
+spark
+master
+master-member
+
+[sql]
+dbsit.test015.org ansible_host=10.0.10.6
+
+[yum]
+dbdev.test014.org ansible_host=10.0.0.6

@@ -1,0 +1,54 @@
+---
+
+- name: Copy blueprint 
+  copy:
+    src: '{{env}}/blueprint.json'
+    dest: /tmp/blueprint.json
+
+#- name: Replace blueprint clustername
+#  shell: |
+#       sed -i 's/clustername_here/{{clustername}}/g' /tmp/blueprint.json
+
+#- name: create blueprint json
+#  template:
+#    src: '{{env}}/blueprint.j2'
+#    dest: /tmp/blueprint.json
+#    owner: root
+
+- name: create clustertemplate json
+  template:
+    src: '{{env}}/clustertemplate.j2'
+    dest: /tmp/clustertemplate.json
+    owner: root
+
+#- name: create payload (kerberos)
+#  template:
+#    src: '{{env}}/payload.j2'
+#    dest: /tmp/payload
+#    owner: root
+#  when: kerberos_cluster|default(False)==True 
+
+- name: execute blueprint json
+  shell: |
+       curl -H "X-Requested-By: ambari" -u admin:admin -X POST http://localhost:8080/api/v1/blueprints/{{clustername}} \
+       -d @blueprint.json 
+  args:
+    chdir: /tmp
+    
+#- name: add kdc credential (kerberos)
+#  shell: |
+#       curl -H "X-Requested-By: ambari" -u admin:admin -i -X POST http://localhost:8080/api/v1/blueprints/{{clustername}}/credentials/kdc.admin.credential \
+#       -d @payload 
+#  args:
+#    chdir: /tmp
+#  when: kerberos_cluster|default(False)==True     
+
+# execute blueprint                      
+- name: execute clustertemplate json
+  shell: |
+       curl -u admin:admin -X POST http://localhost:8080/api/v1/clusters/{{clustername}} -d @clustertemplate.json
+  args:
+    chdir: /tmp
+    
+- pause:
+    seconds: 5

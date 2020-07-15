@@ -1,0 +1,42 @@
+---
+
+- name: Fetching logs to Tower
+  fetch:
+    src: "{{path_log}}"
+    dest: "./{{log_file_tower}}"
+    flat: yes
+ 
+- name: Compile logs to {{filename1}}.{{ext}}    
+  shell: cat ./{{log_file_tower}} >> ./{{filename1}}2.{{ext}}
+  delegate_to: localhost # ansible  
+
+- name: Add carriage return    
+  shell: awk 'sub("$", "\r")' ./{{filename1}}2.{{ext}} > ./{{filename1}}.{{ext}}
+  delegate_to: localhost # ansible  
+       
+- block:       
+
+    - name: Send email to group.
+      mail:
+        subject: '{{email_subject}}'
+        host: '{{smtp_server}}'
+        port: 25
+        body: '{{email_body}}'
+        from: '{{email_group}}'
+        to: '{{email_to}}'
+        attach: './{{filename1}}.{{ext}}'
+      delegate_to: localhost # ansible
+      run_once: true  
+      ignore_errors: true
+    
+    - debug:
+        msg: '{{email_subject}} sent to {{email_to}}.'
+      run_once: true   
+  
+  when: send_mail|default(False)==True
+  
+- name: "Copy {{filename1}}.{{ext}} to first client {{inventory_hostname}} **second copy"
+  copy:
+    src: './{{filename1}}.{{ext}}'
+    dest: '$HOME/{{filename1}}.{{ext}}'
+  run_once: true

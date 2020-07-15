@@ -1,0 +1,65 @@
+---
+# AMBARI YUM ############################################################################################################################
+
+- name: Configure spark1 to httpd/createrepo for yum
+  hosts: yum # yum
+  become: true
+  any_errors_fatal: True
+  vars:
+    rhel_7:
+      - epel-release
+      - deltarpm
+      - httpd
+      - createrepo   
+      - yum-plugin-priorities  
+  roles:
+    - { role: config, yum: true, yum_install: true, yum_clean_all: true } # yum_makecache: true -needed?
+  tags: 
+    - ambari_yum ##################
+    - prepare_dev
+    - prepare_sit  #-one repo only ???  
+   
+- name: Download ambari yum
+  hosts: yum # yum
+  become: true
+  any_errors_fatal: True  
+  vars:
+    artifacts_dest: /repo/
+    create_dest: true
+    deleterepo: true
+    extract_repo: true
+    owner_file: root
+    group_file: root
+    mode_file: 0755     
+    mode_folder: 0755     
+    artifactslist:
+       - { url: '{{download_url}}', name: 'ambari-2.7.4.0-centos7.tar.gz' }
+       - { url: '{{download_url}}', name: 'HDP-3.1.4.0-centos7-rpm.tar.gz' }
+       - { url: '{{download_url}}', name: 'HDP-UTILS-1.1.0.22-centos7.tar.gz' }
+    httpd_path: /var/www/html/
+    repopathlist:
+      - '{{artifacts_dest}}ambari'
+      - '{{artifacts_dest}}HDP'
+      - '{{artifacts_dest}}HDP-UTILS'
+    donotexec: true # true=download -if false put it on the /repo/ folder manually      
+  roles:
+    - { role: config , download_repo: true }
+    - { role: ambari , createrepo: true }
+  tags: 
+    - ambari_yum ##################
+    - prepare_dev
+    - prepare_sit ###-one repo only ???
+
+- name: Copy ambari yum to all
+  hosts: all
+  become: true
+  any_errors_fatal: True  
+  vars:
+    hostrepo: "{{groups['yum'][0]}}" 
+  roles:
+    - { role: config , copyrepo: true, ambarirepo: true, hdprepo: true }
+  tags: 
+    - ambari_yum ##################
+    - copyrepo
+    - prepare_dev
+    - prepare_sit

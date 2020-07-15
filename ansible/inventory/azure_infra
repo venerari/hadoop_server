@@ -1,0 +1,5 @@
+[sql]
+dbdev.test014.org ansible_host=10.0.0.6
+
+[yum:children]
+sql

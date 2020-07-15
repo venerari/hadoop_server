@@ -1,0 +1,30 @@
+---
+
+############# common variables
+
+# These should be in the main playbook
+# pre_check_tmp:                            # extra vars
+# datestamp:                                # extra vars
+continue_x: true
+
+############# create partition variables
+pvname:                 # coming from inventory variables example pvname=sdc on each host
+vgname:                  # vg name
+lvname:                 # lv name
+fsname:                 # /path 
+partition: "1"                        # 1-4
+type: "p"                             # partition or logical
+ptype: "8e"                           # lvm
+disksize:                             # dev blank=use-all or put you own size like 10G
+pvlist: "/dev/{{disk1}}{{partition}}"  
+size:                        # lv to use like 5g or +100%FREE
+src: "/dev/{{vgname}}/{{lvname}}"
+fst: "xfs"                            # the script automatically select this according to /etc/fstab   
+remove_fstab: true
+force: "no"
+answer: "no"
+pesize: "4"
+pvoption: ""
+vgoption: ""  
+active: "yes"
+option: ""      
